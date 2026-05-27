@@ -1,0 +1,17 @@
+{
+  "audited_repo": "c:/Users/test/my-saas",
+  "audit_date": "2026-05-27",
+  "themes": {
+    "01_Produit_UX": {
+      "1.1": {"status": "KO", "evidence": "components/Dashboard.tsx:120", "notes": "Pas d'onboarding visible — empty state vide"},
+      "1.2": {"status": "OK", "evidence": "components/EmptyState.tsx:15", "notes": "4 cards onboarding présentes"},
+      "1.3": {"status": "OK", "evidence": null, "notes": "CTA labels clairs partout"},
+      "1.10": {"status": "KO", "evidence": "components/Settings.tsx:340", "notes": "Suppression compte sans confirm modal"}
+    },
+    "02_Securite_Auth": {
+      "2.1": {"status": "OK", "evidence": "server/utils/authCookie.ts:25", "notes": "httpOnly cookie + SameSite=Lax"},
+      "2.3": {"status": "OK", "evidence": "server/middleware/auth.ts:99", "notes": "2FA enforced sur admin"},
+      "2.9": {"status": "N/A", "evidence": null, "notes": "Test runtime nécessaire (scan GitGuardian)"}
+    }
+  }
+}

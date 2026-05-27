@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# Local audit results (don't commit other people's audit data)
+audit_results.json
+AUDIT_*.xlsx
+!examples/empty_template.xlsx
+!examples/sample_results.json
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

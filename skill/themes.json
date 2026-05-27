@@ -1,0 +1,253 @@
+{
+  "themes": [
+    {
+      "id": "01_Produit_UX",
+      "name": "1. Produit & UX",
+      "description": "Friction first-run, empty states, accessibilité de base, mobile.",
+      "items": [
+        {"id": "1.1", "label": "First-time user voit la valeur en < 60 sec", "how": "Inscription incognito → chrono jusqu'au 'wow moment'", "crit": "🔴"},
+        {"id": "1.2", "label": "Empty state du dashboard guide l'action (pas un trou)", "how": "Compte vierge → présence de cards onboarding ou CTA primaire", "crit": "🟡"},
+        {"id": "1.3", "label": "Tous les CTA disent ce qu'ils font (pas de 'Valider' ambigu)", "how": "Parcours tous les boutons → label = action backend ?", "crit": "🟡"},
+        {"id": "1.4", "label": "Erreurs réseau/API toastent un message utilisable", "how": "Couper le réseau → tester save/upload/login", "crit": "🟡"},
+        {"id": "1.5", "label": "Loading states partout (skeletons, spinners) — pas de freeze visuel", "how": "Throttle réseau à Slow 3G → vérifier feedback", "crit": "🟢"},
+        {"id": "1.6", "label": "Mobile responsive testé sur le plus petit viewport ciblé", "how": "DevTools mode iPhone SE (375px) ou équivalent", "crit": "🔴"},
+        {"id": "1.7", "label": "Tab navigation (clavier seul) fonctionne sur tous les formulaires", "how": "Tab/Shift+Tab → focus visible et logique", "crit": "🟡"},
+        {"id": "1.8", "label": "Pas de Lorem ipsum, placeholders TODO, ou textes oubliés dans une autre langue", "how": "grep recherche `lorem`, `todo`, `tbd`, `xxx` dans le code", "crit": "🔴"},
+        {"id": "1.9", "label": "i18n cohérent : tous les libellés visibles sont traduits dans toutes les langues annoncées", "how": "Switch toutes les langues → screen audit", "crit": "🟡"},
+        {"id": "1.10", "label": "Confirmation pour actions destructives (suppression, paiement, opt-out)", "how": "Tester chaque suppression — modal de confirmation présent ?", "crit": "🔴"},
+        {"id": "1.11", "label": "Contraste WCAG AA minimum sur les textes (4.5:1 normal, 3:1 large)", "how": "Lighthouse accessibility audit", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "02_Securite_Auth",
+      "name": "2. Sécurité & Auth",
+      "description": "Tokens, CSP, 2FA, rate-limit, hash mot de passe, headers de sécurité, validation, secrets, audit.",
+      "items": [
+        {"id": "2.1", "label": "Sessions via cookie httpOnly + Secure + SameSite Lax/Strict (pas token en localStorage seul)", "how": "DevTools → Application → Cookies", "crit": "🔴"},
+        {"id": "2.2", "label": "CSP en production avec script-src/connect-src restreints (pas de 'unsafe-inline' sur script-src)", "how": "Inspecter le header Content-Security-Policy", "crit": "🔴"},
+        {"id": "2.3", "label": "2FA disponible pour tous, obligatoire pour les comptes admin / privilégiés", "how": "Désactiver 2FA admin → l'app doit refuser l'accès aux endpoints sensibles", "crit": "🔴"},
+        {"id": "2.4", "label": "Rate limit sur les endpoints d'auth (/login, /register, /password/reset)", "how": "Stresser avec curl → 429 doit apparaître après N tentatives", "crit": "🔴"},
+        {"id": "2.5", "label": "Hash mot de passe bcrypt (cost ≥ 10) ou argon2 ou scrypt", "how": "Inspecter le code de signup/auth", "crit": "🔴"},
+        {"id": "2.6", "label": "Anti-énumération sur login (même message pour email inexistant vs mot de passe faux)", "how": "Tenter login email connu vs inconnu", "crit": "🟡"},
+        {"id": "2.7", "label": "Email verification obligatoire avant accès aux features sensibles", "how": "Compte non vérifié → essayer payer, exporter", "crit": "🟡"},
+        {"id": "2.8", "label": "Authorization vérifie le rôle contre la DB (pas seulement le claim JWT/session)", "how": "Demoter un admin en DB → son token doit perdre accès dans la minute", "crit": "🟡"},
+        {"id": "2.9", "label": "Aucun secret en clair dans le repo (clés API, mots de passe, tokens)", "how": "git log -p + scan secrets (GitGuardian, Trufflehog)", "crit": "🔴"},
+        {"id": "2.10", "label": "Headers de sécurité : X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy", "how": "Tester via securityheaders.com → grade ≥ A", "crit": "🟡"},
+        {"id": "2.11", "label": "Validation côté serveur (Zod / Joi / Pydantic / équivalent) sur toutes les routes mutantes", "how": "Auditer chaque route POST/PUT/PATCH/DELETE", "crit": "🔴"},
+        {"id": "2.12", "label": "Protection CSRF active sur les requêtes mutantes en cookie-auth", "how": "Tester soumission cross-origin sans token", "crit": "🟡"},
+        {"id": "2.13", "label": "Logs d'audit pour actions admin sensibles (création/suppression user, role change, payout)", "how": "Existence d'une table d'audit + accessibilité", "crit": "🟡"},
+        {"id": "2.14", "label": "Dépendances scannées (npm audit / Snyk / Dependabot) — pas de CVE critique en prod", "how": "Dernier rapport scan ≤ 7 jours", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "03_Donnees_Confidentialite",
+      "name": "3. Données & Confidentialité",
+      "description": "Droits utilisateurs (accès, oubli), DPA, rétention, cookies, chiffrement, hébergement.",
+      "items": [
+        {"id": "3.1", "label": "Export des données personnelles (droit d'accès) — format machine-readable", "how": "Endpoint /account/export fonctionnel", "crit": "🔴"},
+        {"id": "3.2", "label": "Suppression compte respecte le droit à l'oubli (anonymisation si transactions à garder)", "how": "Tester delete → User row anonymisée, Transactions intactes", "crit": "🔴"},
+        {"id": "3.3", "label": "Registre des traitements documenté (qui traite quoi, finalité, base légale, durée)", "how": "Document accessible et à jour", "crit": "🔴"},
+        {"id": "3.4", "label": "DPA signés avec tous les fournisseurs traitant des données perso", "how": "Liste des sous-traitants + statut contractuel", "crit": "🔴"},
+        {"id": "3.5", "label": "Analyse d'impact (DPIA / PIA) si traitement à risque", "how": "Document présent et à jour", "crit": "🟡"},
+        {"id": "3.6", "label": "Hébergement aligné avec les exigences de la juridiction des utilisateurs", "how": "Vérifier la région des bases, buckets, providers IA", "crit": "🟡"},
+        {"id": "3.7", "label": "Politique de rétention écrite + job de purge automatique", "how": "Document + job documenté et qui tourne", "crit": "🔴"},
+        {"id": "3.8", "label": "Bannière cookie conforme (refus = même clic qu'accepter)", "how": "Inspecter en visiteur — pas de pré-cochage", "crit": "🔴"},
+        {"id": "3.9", "label": "Trackers / analytics chargés UNIQUEMENT après consentement", "how": "DevTools Network avant accept → aucun call GA/Meta", "crit": "🔴"},
+        {"id": "3.10", "label": "Logs d'identification (IP+UA+horodatage) si hébergeur de contenu", "how": "Table de logs + durée de rétention conforme", "crit": "🟡"},
+        {"id": "3.11", "label": "DPO / Privacy Officer désigné si la juridiction l'exige", "how": "Coordonnées affichées dans les mentions", "crit": "🟡"},
+        {"id": "3.12", "label": "Chiffrement at-rest activé sur la DB et les buckets", "how": "Vérifier config cloud / fournisseur", "crit": "🟡"},
+        {"id": "3.13", "label": "TLS 1.2 minimum sur tous les endpoints publics (idéalement TLS 1.3)", "how": "SSL Labs test → grade A", "crit": "🔴"},
+        {"id": "3.14", "label": "Pas de PII dans les URLs (email, ID en query string indexable)", "how": "Audit des routes", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "04_IA_Qualite",
+      "name": "4. IA — Pertinence & Qualité",
+      "description": "Eval set, hallucinations, prompt injection, output filtering, versioning, fallback.",
+      "items": [
+        {"id": "4.1", "label": "Set d'évaluation (eval set) figé pour tester les prompts à chaque changement", "how": "Dossier evals/ ou framework Promptfoo/Braintrust/DeepEval/Ragas", "crit": "🟡"},
+        {"id": "4.2", "label": "Score de pertinence mesuré sur les sorties IA (golden answers + similarity / LLM-as-judge)", "how": "Process documenté + dashboard", "crit": "🟢"},
+        {"id": "4.3", "label": "Détection des hallucinations (output contredit input, faits inventés, citations falsifiées)", "how": "Sample de 50 sorties prod → review manuel", "crit": "🟡"},
+        {"id": "4.4", "label": "Prompt injection testé (user input contient 'ignore instructions above', roleplay)", "how": "10 inputs hostiles → mesurer escape rate", "crit": "🔴"},
+        {"id": "4.5", "label": "Output filtré pour contenu prohibé (NSFW, instructions dangereuses, contenu illégal)", "how": "Prompts adversariaux → contenu bloqué ?", "crit": "🔴"},
+        {"id": "4.6", "label": "Versioning des prompts (commit dans le code, pas hardcodé inline)", "how": "Prompts dans des fichiers dédiés versionnés ?", "crit": "🟡"},
+        {"id": "4.7", "label": "Versioning du modèle (référence à une version pinnée, pas 'latest')", "how": "Inspecter l'appel SDK", "crit": "🟡"},
+        {"id": "4.8", "label": "Fallback déterministe quand l'IA échoue (rate limit, model down, output unparseable)", "how": "Couper la clé API → mode dégradé propre ?", "crit": "🔴"},
+        {"id": "4.9", "label": "Validation des outputs structurés (JSON schema/Pydantic/Zod) avec retry si malformé", "how": "Inspecter post-traitement IA", "crit": "🟡"},
+        {"id": "4.10", "label": "Disclaimer 'Généré par IA, peut contenir des erreurs' visible sur chaque sortie", "how": "Audit visuel des écrans avec output IA", "crit": "🟡"},
+        {"id": "4.11", "label": "Citation/source affichée si l'IA fait du RAG sur des documents internes", "how": "UI montre les passages utilisés ?", "crit": "🟢"}
+      ]
+    },
+    {
+      "id": "05_IA_Couts",
+      "name": "5. IA — Coûts & Limites",
+      "description": "Quota utilisateur, suivi coûts, alertes, max tokens, rate limit, cache, fallback, idempotency.",
+      "items": [
+        {"id": "5.1", "label": "Quota par utilisateur (crédits IA, calls/mois) avec compteur en DB", "how": "Tester épuisement → 402 / blocage propre", "crit": "🔴"},
+        {"id": "5.2", "label": "Coût par appel suivi et journalisé (tokens in/out × tarif modèle)", "how": "Table d'usage IA ou métriques équivalentes", "crit": "🟡"},
+        {"id": "5.3", "label": "Budget global plateforme avec alerte automatique (quotidien + mensuel)", "how": "Budget configuré côté fournisseur cloud + IA", "crit": "🔴"},
+        {"id": "5.4", "label": "Limite max de tokens par requête (anti coût explosif)", "how": "Input de 100 000 caractères → refusé avant appel IA ?", "crit": "🔴"},
+        {"id": "5.5", "label": "Rate limit / file d'attente sur les calls IA (anti-DDoS coûteux)", "how": "Burst 100 calls/sec → 429 ou queue ?", "crit": "🟡"},
+        {"id": "5.6", "label": "Cache des prompts répétés (même input → sortie servie depuis cache)", "how": "2× la même requête → 2nd appel < 100ms", "crit": "🟢"},
+        {"id": "5.7", "label": "Modèle moins cher en fallback automatique sur les tâches simples", "how": "Documentation du routing", "crit": "🟢"},
+        {"id": "5.8", "label": "Timeout sur l'appel modèle (≤ 30s)", "how": "Inspecter le code SDK + tester sur prompt lent", "crit": "🟡"},
+        {"id": "5.9", "label": "Free tier limité : signup bonus, pas un quota infini", "how": "Compte free → quota visible et opposable", "crit": "🟡"},
+        {"id": "5.10", "label": "Idempotency sur les calls IA payés (retry réseau ne re-débite pas)", "how": "Tester double-call avec idem-key", "crit": "🟡"},
+        {"id": "5.11", "label": "Streaming activé pour les réponses longues (réduit perceived latency)", "how": "Calls retournent en SSE/chunks ?", "crit": "🟢"}
+      ]
+    },
+    {
+      "id": "06_IA_Gouvernance",
+      "name": "6. IA — Gouvernance & cadre légal",
+      "description": "Transparence, classification AI Act, opt-out training, watermarking, model cards, audit-trail.",
+      "items": [
+        {"id": "6.1", "label": "Modèle(s) utilisé(s) + finalité divulgué(s) dans CGU + politique de confidentialité", "how": "Section IA explicite ?", "crit": "🔴"},
+        {"id": "6.2", "label": "Consentement explicite si l'IA prend une décision impactante", "how": "UI de consentement avant feature IA-décisionnelle", "crit": "🟡"},
+        {"id": "6.3", "label": "Classification du système IA selon le cadre applicable (ex. EU AI Act)", "how": "Classification documentée + actions selon catégorie", "crit": "🟡"},
+        {"id": "6.4", "label": "Opt-out fourniture de données pour entraînement", "how": "Setting utilisateur 'Ne pas utiliser mes données'", "crit": "🟡"},
+        {"id": "6.5", "label": "Watermarking / disclosure si output confondable avec contenu humain (deepfake)", "how": "UI/metadata signalent l'origine IA", "crit": "🟢"},
+        {"id": "6.6", "label": "Provider IA déclaré comme sous-traitant dans le registre (DPA signé)", "how": "Registre à jour", "crit": "🔴"},
+        {"id": "6.7", "label": "Model card disponible (description, biais connus, limitations)", "how": "Document accessible aux utilisateurs business", "crit": "🟢"},
+        {"id": "6.8", "label": "Pas de décision purement automatisée à effet significatif sans humain dans la boucle", "how": "Audit features IA → identifier décisions auto à fort impact", "crit": "🔴"},
+        {"id": "6.9", "label": "Logs d'inférence IA conservés (audit-trail) : prompt + timestamp + user", "how": "Table de logs des prompts/outputs", "crit": "🟡"},
+        {"id": "6.10", "label": "Documentation interne du flux IA (data lineage)", "how": "Diagramme + doc d'architecture IA", "crit": "🟢"},
+        {"id": "6.11", "label": "Process documenté pour traiter une plainte sur une décision IA (recours humain)", "how": "Endpoint d'appel + email dédié", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "07_Architecture",
+      "name": "7. Architecture & Scalabilité",
+      "description": "Stateless, DB pool, rate-limiter persistent, webhook idempotency, queue, backup, multi-env.",
+      "items": [
+        {"id": "7.1", "label": "Backend stateless (instances interchangeables, pas de session en mémoire)", "how": "Tuer une instance pendant une opération → reprise propre ?", "crit": "🔴"},
+        {"id": "7.2", "label": "Pool de connexions DB borné avec timeout court", "how": "Inspecter la config de la couche d'accès aux données", "crit": "🔴"},
+        {"id": "7.3", "label": "Rate-limiter persistant (store partagé) si multi-instance", "how": "Compteur centralisé ?", "crit": "🟡"},
+        {"id": "7.4", "label": "Idempotency sur webhooks externes via table dédiée", "how": "Re-jouer le même webhook → pas de double traitement", "crit": "🔴"},
+        {"id": "7.5", "label": "Job queue pour les tâches lourdes (encodage, IA longue, emails masse)", "how": "Worker / queue / task system existe", "crit": "🟡"},
+        {"id": "7.6", "label": "CDN devant les assets statiques", "how": "Cache-Control headers sur /assets/", "crit": "🟢"},
+        {"id": "7.7", "label": "Health checks sur tous les services externes (DB, stockage, paiement, IA, email)", "how": "Endpoint /health retourne le statut de chaque dépendance", "crit": "🟡"},
+        {"id": "7.8", "label": "Migration DB testée sur staging avant prod, idempotente, réversible", "how": "Process de release documenté", "crit": "🔴"},
+        {"id": "7.9", "label": "Backup DB automatique + retention ≥ 7 jours + restore testé", "how": "Plan DR + dernier test de restore daté", "crit": "🔴"},
+        {"id": "7.10", "label": "Pas de single point of failure critique (DB répliquée, service critique multi-zones)", "how": "Diagramme + plan DR", "crit": "🟡"},
+        {"id": "7.11", "label": "Capacité à scaler horizontalement (charge × 10 sans refactor)", "how": "Test charge ou audit d'archi", "crit": "🟡"},
+        {"id": "7.12", "label": "Environnements séparés (dev / staging / prod) avec secrets distincts", "how": "Variables d'env propres à chaque environnement", "crit": "🔴"}
+      ]
+    },
+    {
+      "id": "08_Paiement",
+      "name": "8. Paiement & Monétisation",
+      "description": "Webhooks, idempotency, dunning, refunds, taxes, facturation, KYC marketplace, métriques.",
+      "items": [
+        {"id": "8.1", "label": "Webhooks paiement avec idempotency stockée (event ID en DB)", "how": "Re-jouer un webhook 2× → pas de double traitement", "crit": "🔴"},
+        {"id": "8.2", "label": "Webhooks paiement vérifient la signature du provider", "how": "Inspecter le code webhook", "crit": "🔴"},
+        {"id": "8.3", "label": "Subscription / facturation synchronisé DB ↔ provider (cron de réconciliation)", "how": "Job de réconciliation existe ?", "crit": "🟡"},
+        {"id": "8.4", "label": "Past-due / dunning : grace period documentée puis blocage features payantes", "how": "Tester invoice failed → comportement attendu", "crit": "🟡"},
+        {"id": "8.5", "label": "Process refund documenté (conditions, délai, qui peut le faire)", "how": "Self-service ou support clair", "crit": "🟡"},
+        {"id": "8.6", "label": "Taxes (TVA, sales tax) calculées correctement selon pays acheteur", "how": "Test commande dans 3 juridictions", "crit": "🔴"},
+        {"id": "8.7", "label": "Affichage TTC / HT explicite sur la page pricing selon obligations locales", "how": "Audit visuel page pricing", "crit": "🔴"},
+        {"id": "8.8", "label": "Marketplace / payouts : KYC validé avant tout versement, AML conforme", "how": "Payout impossible si KYC pending", "crit": "🟡"},
+        {"id": "8.9", "label": "Facturation automatique (PDF) + archivage selon obligations comptables", "how": "Facture envoyée + accessible dans le compte", "crit": "🔴"},
+        {"id": "8.10", "label": "Dashboard MRR / churn / LTV / cohortes pour le founder", "how": "Dashboard analytics produit existe ?", "crit": "🟢"},
+        {"id": "8.11", "label": "Gestion des essais (trial) : conversion automatique ou manuelle annoncée", "how": "Tester fin de trial → comportement et notif", "crit": "🟡"},
+        {"id": "8.12", "label": "Politique de proration claire en cas d'upgrade / downgrade en milieu de cycle", "how": "Tester upgrade Pro → Business → calcul cohérent", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "09_Observabilite",
+      "name": "9. Observabilité & Ops",
+      "description": "Logs structurés, alertes, uptime, runbook, rollback, métriques business.",
+      "items": [
+        {"id": "9.1", "label": "Logs structurés (JSON) avec severity et requestId/traceId", "how": "Logs prod exploitables par filtre ?", "crit": "🟡"},
+        {"id": "9.2", "label": "Aucune PII dans les logs (email, mot de passe, CB, token)", "how": "grep sur les logs des 24h passées", "crit": "🔴"},
+        {"id": "9.3", "label": "Alertes automatiques sur erreurs 5xx > seuil", "how": "Alerte configurée et testée", "crit": "🔴"},
+        {"id": "9.4", "label": "Alerte budget (cloud, paiement, IA) en cas de dépassement", "how": "Configuration vérifiée", "crit": "🟡"},
+        {"id": "9.5", "label": "Uptime monitoring externe (indépendant du cloud du SaaS)", "how": "Couper le service → alerte arrive < 5 min", "crit": "🟡"},
+        {"id": "9.6", "label": "Playbook incident documenté (qui appeler, comment rollback, communication client)", "how": "Document RUNBOOK.md ou équivalent", "crit": "🟡"},
+        {"id": "9.7", "label": "Status page publique pour les incidents", "how": "URL accessible publiquement", "crit": "🟢"},
+        {"id": "9.8", "label": "Métrique de latence p50/p95/p99 sur les endpoints critiques", "how": "Tracing distribué ou métriques applicatives", "crit": "🟢"},
+        {"id": "9.9", "label": "Capacité à rollback en < 5 min sur production", "how": "Versions précédentes accessibles + process documenté", "crit": "🔴"},
+        {"id": "9.10", "label": "Changelog visible utilisateurs (release notes)", "how": "URL /changelog ou widget 'Quoi de neuf'", "crit": "🟢"},
+        {"id": "9.11", "label": "Process de gestion des erreurs côté client (Sentry / Rollbar)", "how": "Tableau de bord des erreurs JS en prod", "crit": "🟡"},
+        {"id": "9.12", "label": "Métriques business clés (signup, conversion, activation) instrumentées", "how": "Dashboard avec ces 3 chiffres au moins", "crit": "🟡"}
+      ]
+    },
+    {
+      "id": "10_Legal",
+      "name": "10. Légal & Conformité",
+      "description": "CGU/CGV, Privacy, mentions, médiation, cookies, rétractation, hébergeur, accessibilité.",
+      "items": [
+        {"id": "10.1", "label": "Conditions d'utilisation acceptées explicitement à l'inscription (checkbox non pré-cochée)", "how": "Tester signup → blocage si non cochée", "crit": "🔴"},
+        {"id": "10.2", "label": "Conditions de vente disponibles avant le paiement (lien visible)", "how": "Audit du flow checkout", "crit": "🔴"},
+        {"id": "10.3", "label": "Politique de confidentialité accessible depuis chaque page", "how": "Lien dans le footer présent partout", "crit": "🔴"},
+        {"id": "10.4", "label": "Mentions / informations légales obligatoires selon juridiction", "how": "Audit mentions légales", "crit": "🔴"},
+        {"id": "10.5", "label": "Médiateur / mécanisme de résolution des litiges si juridiction l'impose B2C", "how": "Mentions légales — coordonnées + URL", "crit": "🟡"},
+        {"id": "10.6", "label": "Droit de rétractation / cooling-off documenté si requis", "how": "CGV — clause présente ?", "crit": "🟡"},
+        {"id": "10.7", "label": "Hébergement de contenu user : régime de responsabilité + procédure de notification/retrait", "how": "Endpoint de signalement", "crit": "🟡"},
+        {"id": "10.8", "label": "Cookies 'non essentiels' listés avec finalité et refus catégoriel", "how": "Bannière de cookies — détail par catégorie", "crit": "🔴"},
+        {"id": "10.9", "label": "Email de contact officiel répondant en délai imposé (UE RGPD : 30 jours)", "how": "Test : envoyer demande sur email officiel", "crit": "🟡"},
+        {"id": "10.10", "label": "Stockage durable des CGU acceptées (timestamp + version) par utilisateur", "how": "Champ acceptedTermsAt + version en DB", "crit": "🟡"},
+        {"id": "10.11", "label": "Process d'appel / recours si suspension de compte ou retrait de contenu", "how": "Endpoint d'appel ou email dédié", "crit": "🟡"},
+        {"id": "10.12", "label": "Accessibilité web (WCAG AA si service public en UE ; ADA US)", "how": "Lighthouse a11y audit ≥ 90", "crit": "🟡"},
+        {"id": "10.13", "label": "Mention du recours aux outils IA dans la politique de confidentialité et CGU", "how": "Section dédiée présente", "crit": "🔴"}
+      ]
+    },
+    {
+      "id": "11_UX_UI_Design",
+      "name": "11. UX/UI — Qualité de design",
+      "description": "Design system, palette, typo, spacing, états visuels, animations, branding, responsive.",
+      "items": [
+        {"id": "11.1", "label": "Design system documenté (couleurs, typo, spacing, composants) avec règles d'usage", "how": "Storybook / Figma library / tokens.css partagé", "crit": "🟡"},
+        {"id": "11.2", "label": "Palette de couleurs avec contraste WCAG AA validé sur tous les usages", "how": "Audit avec contrast-checker sur les combinaisons utilisées", "crit": "🟡"},
+        {"id": "11.3", "label": "Hiérarchie typo claire (max 3-4 niveaux), polices self-hosted (pas SPOF CDN tiers)", "how": "Inspecter font-family + Network", "crit": "🟡"},
+        {"id": "11.4", "label": "Spacing / grid system cohérent (échelle 4/8/16/24/32)", "how": "Audit visuel — éléments alignés sur une grille ?", "crit": "🟢"},
+        {"id": "11.5", "label": "Composants UI réutilisables (boutons, inputs, modales) — pas N variations ad-hoc", "how": "grep ou Storybook : combien de Button différents ?", "crit": "🟡"},
+        {"id": "11.6", "label": "États visuels couverts pour chaque composant interactif (default/hover/focus/active/disabled/loading/error)", "how": "Interagir avec chaque composant via souris ET clavier", "crit": "🟡"},
+        {"id": "11.7", "label": "Focus rings visibles (accessibilité clavier) sans être intrusifs", "how": "Tab à travers la page sur fond clair ET sombre", "crit": "🟡"},
+        {"id": "11.8", "label": "Touch targets ≥ 44×44 px sur mobile (reco Apple/Google)", "how": "DevTools mobile + mesurer les zones tappables", "crit": "🟡"},
+        {"id": "11.9", "label": "Animations purposeful (≤ 300ms) + respect de prefers-reduced-motion", "how": "Activer prefers-reduced-motion → animations stoppées ?", "crit": "🟢"},
+        {"id": "11.10", "label": "Empty states designés (pas un blanc) — chaque liste vide a un message + action", "how": "Tester chaque liste/tableau à vide", "crit": "🟡"},
+        {"id": "11.11", "label": "Error states informatifs (qu'est-ce qui s'est passé, comment corriger)", "how": "Provoquer chaque erreur — message actionable ?", "crit": "🟡"},
+        {"id": "11.12", "label": "Loading states adaptés (skeletons pour listes, spinners pour actions, progress pour upload)", "how": "Throttler le réseau → feedback visuel cohérent", "crit": "🟢"},
+        {"id": "11.13", "label": "Iconographie cohérente (un seul set : Lucide / Heroicons / Material…)", "how": "Audit visuel — pas de mélange de styles", "crit": "🟢"},
+        {"id": "11.14", "label": "Branding complet : logo, favicons (multiple tailles), OG, splash PWA, emails harmonisés", "how": "Audit visuel des touchpoints non-app", "crit": "🟡"},
+        {"id": "11.15", "label": "Breakpoints responsive documentés et appliqués (mobile-first idéalement)", "how": "Tester desktop / tablet / mobile / 375px", "crit": "🔴"},
+        {"id": "11.16", "label": "Progressive disclosure : ne pas tout montrer d'un coup (accordions, tabs, 'Voir plus')", "how": "Audit cognitif des écrans denses", "crit": "🟢"},
+        {"id": "11.17", "label": "Undo > confirm modal sur les actions réversibles", "how": "Comparer suppression légère vs définitive", "crit": "🟢"},
+        {"id": "11.18", "label": "Notifications (toasts) cohérents : positionnement fixe, durée standardisée, dismissable", "how": "Déclencher plusieurs toasts en parallèle", "crit": "🟡"},
+        {"id": "11.19", "label": "Pas de dark patterns (croix introuvable, urgence factice, opt-in pré-coché, désabonnement caché)", "how": "Audit éthique — un tiers neutre repère-t-il un pattern manipulatoire ?", "crit": "🔴"},
+        {"id": "11.20", "label": "Cohérence multi-écrans : revenir à un écran préserve l'état (scroll, filtres, sélection)", "how": "Tester nav avant/arrière dans le navigateur", "crit": "🟢"}
+      ]
+    },
+    {
+      "id": "12_Frontend_Backend",
+      "name": "12. Frontend ↔ Backend",
+      "description": "Contrats API, HTTP semantique, naming/dates/pagination, validation, cache, versioning, CORS, idempotency.",
+      "items": [
+        {"id": "12.1", "label": "Types partagés frontend ↔ backend (OpenAPI, GraphQL, Zod monorepo, tRPC…)", "how": "Changer un champ backend → erreur TS côté frontend ?", "crit": "🟡"},
+        {"id": "12.2", "label": "Format d'erreur API uniforme partout ({ error, code?, fields? } ou équivalent)", "how": "Inspecter 10 endpoints en erreur → même structure ?", "crit": "🔴"},
+        {"id": "12.3", "label": "HTTP status codes sémantiquement corrects (201/204/400/401/403/404/422/429/5xx)", "how": "Tester chaque cas → bon code retourné ?", "crit": "🟡"},
+        {"id": "12.4", "label": "Verbes HTTP respectés (GET idempotent, POST create, PUT replace, PATCH partial, DELETE)", "how": "Audit route par route", "crit": "🟡"},
+        {"id": "12.5", "label": "Naming des champs cohérent (camelCase OU snake_case partout, pas mélangé)", "how": "Inspecter 10 endpoints + frontend usage", "crit": "🟡"},
+        {"id": "12.6", "label": "Format de dates uniforme (ISO 8601 dans les réponses, parsing identique côté frontend)", "how": "Audit des champs *At / *Date", "crit": "🟡"},
+        {"id": "12.7", "label": "Pagination uniforme (offset/limit OU cursor partout)", "how": "Inspecter 3-5 endpoints paginés", "crit": "🟡"},
+        {"id": "12.8", "label": "Validation frontend mirror exactement la validation backend (min/max/regex/format)", "how": "Bypass frontend → erreur backend ≡ erreur frontend ?", "crit": "🟡"},
+        {"id": "12.9", "label": "Frontend cache features non autorisées (mais backend re-vérifie quand même)", "how": "Token avec rôle limité → UI adaptée ET endpoint refuse", "crit": "🟡"},
+        {"id": "12.10", "label": "Optimistic UI avec rollback sur erreur (si utilisé) — pas de flash puis revert silencieux", "how": "Couper le réseau pendant une action optimiste → revert ?", "crit": "🟢"},
+        {"id": "12.11", "label": "Cache invalidation après mutation (refresh la query React Query/SWR)", "how": "Modifier une ressource → liste se rafraîchit sans reload ?", "crit": "🟡"},
+        {"id": "12.12", "label": "WebSocket / SSE / polling : reconnexion automatique, état UI synchronisé", "how": "Couper le wifi 30s puis rétablir → état cohérent ?", "crit": "🟢"},
+        {"id": "12.13", "label": "Timeout frontend (~30s) cohérent avec timeout backend", "how": "Tester avec un endpoint lent", "crit": "🟡"},
+        {"id": "12.14", "label": "Messages traduits côté serveur OU côté frontend (mais pas mix EN/FR)", "how": "Vérifier que les erreurs backend remontent dans la bonne langue", "crit": "🟡"},
+        {"id": "12.15", "label": "Versioning API : changement breaking → nouveau endpoint OU header Accept-Version", "how": "Audit changelog backend", "crit": "🟡"},
+        {"id": "12.16", "label": "Feature flags cohérents (flag OFF backend → frontend ne propose pas la feature)", "how": "Désactiver un flag → audit UI", "crit": "🟡"},
+        {"id": "12.17", "label": "Compatibilité descendante (vieux frontend en cache ne casse pas le backend N+1)", "how": "Tester avec un build frontend de la semaine dernière", "crit": "🟡"},
+        {"id": "12.18", "label": "Assets / chunk hashing : nouvelles versions invalident le cache navigateur", "how": "Inspecter le nom des chunks dans /dist", "crit": "🔴"},
+        {"id": "12.19", "label": "Auth cookies : credentials: 'include' + Access-Control-Allow-Credentials: true + origin spécifique", "how": "Inspecter une requête authentifiée cross-origin", "crit": "🔴"},
+        {"id": "12.20", "label": "CORS configuré strictement (pas Allow-Origin: * si credentials, allowlist explicite)", "how": "Inspecter le header CORS sur l'API", "crit": "🔴"},
+        {"id": "12.21", "label": "Endpoint pour vérifier santé / version (/health, /version)", "how": "Coller /health en URL → réponse exploitable ?", "crit": "🟢"},
+        {"id": "12.22", "label": "Idempotency-Key supporté sur les mutations critiques (paiement, IA payée, emails)", "how": "Tester double-call avec même idem-key → un seul effet ?", "crit": "🟡"},
+        {"id": "12.23", "label": "Cohérence des limites de taille (upload max front ≤ max back ≤ max reverse-proxy)", "how": "Tester upload juste au-dessus de la limite annoncée", "crit": "🟡"},
+        {"id": "12.24", "label": "Erreurs réseau gérées proprement côté frontend (retry exponentiel sur 5xx, abandon clair sur 4xx)", "how": "Couper le réseau → comportement attendu", "crit": "🟡"}
+      ]
+    }
+  ]
+}
