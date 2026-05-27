@@ -102,6 +102,15 @@ Synthèse courte :
 - Eux doivent retourner uniquement le JSON demandé — pas de prose autour.
 - Si un point demande de tester quelque chose qui exige le serveur en cours d'exécution (ex : tester un endpoint live), ils marquent N/A avec note "Test runtime nécessaire".
 
+### Comment exploiter le champ `automation` (schema v2)
+
+Chaque item du `themes.json` porte un champ `automation` :
+- `"🤖"` (automatisable) → audit complet attendu via inspection du code
+- `"🔁"` (semi-automatisable) → inspection + best effort, signaler ce qui reste manuel
+- `"👤"` (manuel) → marquer N/A par défaut avec note "Manuel — voir notes" et reporter le `manual_caveat` de l'item si présent
+
+Cela permet aux sous-agents de ne pas perdre de temps à essayer d'auditer des choses qui ne peuvent pas l'être par lecture du code (validation juridique, décision métier, test utilisateur réel).
+
 ## Variantes utiles
 
 - `/saas-ai-audit thème:7` → ne lance qu'un seul agent sur le thème 7

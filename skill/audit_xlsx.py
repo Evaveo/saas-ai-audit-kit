@@ -161,45 +161,68 @@ def build_workbook(themes: list[dict], results: dict | None = None,
 
         ws["A1"] = theme["name"]
         ws["A1"].font = TITLE_FONT
-        ws.merge_cells("A1:F1")
+        ws.merge_cells("A1:I1")
 
         ws["A2"] = theme["description"]
         ws["A2"].font = SUBTITLE_FONT
-        ws.merge_cells("A2:F2")
+        ws.merge_cells("A2:I2")
 
-        headers = ["#", "Point de contrôle", "Comment tester", "Criticité", "Score", "Commentaire"]
+        # 9 columns — double reading (PM + Dev) + automation level + tools/AI
+        headers = [
+            "#", "Question Chef de Projet", "Critère Développeur", "Comment tester",
+            "Crit.", "Auto", "Score", "Commentaire", "Outils & IA",
+        ]
         for col, h in enumerate(headers, start=1):
             ws.cell(row=4, column=col, value=h)
         style_header_row(ws, 4, len(headers))
 
         for i, item in enumerate(theme["items"], start=5):
             ws.cell(row=i, column=1, value=item["id"]).font = CELL_FONT
-            ws.cell(row=i, column=2, value=item["label"]).font = CELL_FONT
-            ws.cell(row=i, column=3, value=item["how"]).font = CELL_FONT
-            crit_cell = ws.cell(row=i, column=4, value=item["crit"])
+            ws.cell(row=i, column=2, value=item.get("pm_question", "")).font = CELL_FONT
+            ws.cell(row=i, column=3, value=item["label"]).font = CELL_FONT
+            ws.cell(row=i, column=4, value=item["how"]).font = CELL_FONT
+            crit_cell = ws.cell(row=i, column=5, value=item["crit"])
             crit_cell.font = CELL_FONT
             crit_cell.fill = CRIT_FILLS[item["crit"]]
             crit_cell.alignment = Alignment(horizontal="center", vertical="center")
 
+            auto_cell = ws.cell(row=i, column=6, value=item.get("automation", ""))
+            auto_cell.font = CELL_FONT
+            auto_cell.alignment = Alignment(horizontal="center", vertical="center")
+
             # Pre-fill from results if available
             item_result = theme_results.get(item["id"], {})
             score_value = item_result.get("status", "")
-            score_cell = ws.cell(row=i, column=5, value=score_value)
+            score_cell = ws.cell(row=i, column=7, value=score_value)
             score_cell.alignment = Alignment(horizontal="center", vertical="center")
             score_cell.font = Font(name="Calibri", size=11, bold=True)
             if score_value in STATUS_FILLS:
                 score_cell.fill = STATUS_FILLS[score_value]
 
-            # Comment column: notes + evidence
+            # Comment column: notes + evidence + manual caveat
             notes = item_result.get("notes", "") if item_result else ""
             evidence = item_result.get("evidence", "") if item_result else ""
+            caveat = item.get("manual_caveat") or ""
+            parts = []
+            if notes:
+                parts.append(notes)
             if evidence and evidence != "null":
-                comment = f"{notes}\n📍 {evidence}".strip() if notes else f"📍 {evidence}"
-            else:
-                comment = notes
-            ws.cell(row=i, column=6, value=comment).font = CELL_FONT
+                parts.append(f"📍 {evidence}")
+            if caveat:
+                parts.append(f"⚠️ {caveat}")
+            ws.cell(row=i, column=8, value="\n".join(parts)).font = CELL_FONT
 
-            for col in range(1, 7):
+            # Tools & AI role (combined into one cell for compactness)
+            tools = item.get("recommended_tools") or ""
+            ai_role = item.get("ai_role") or ""
+            tools_parts = []
+            if tools:
+                tools_parts.append(f"🔧 {tools}")
+            if ai_role:
+                tools_parts.append(f"🤖 {ai_role}")
+            ws.cell(row=i, column=9, value="\n".join(tools_parts)).font = Font(name="Calibri", size=9, color="475569")
+
+            for col in range(1, 10):
                 cell = ws.cell(row=i, column=col)
                 cell.alignment = Alignment(
                     horizontal=cell.alignment.horizontal or "left",
@@ -209,30 +232,32 @@ def build_workbook(themes: list[dict], results: dict | None = None,
                 cell.border = BORDER_THIN
 
         last_row = 4 + len(theme["items"])
-        score_validation.add(f"E5:E{last_row}")
+        # Score column is now G (column 7)
+        score_validation.add(f"G5:G{last_row}")
 
         ws.conditional_formatting.add(
-            f"E5:E{last_row}",
-            FormulaRule(formula=['E5="OK"'], fill=PatternFill("solid", fgColor="BBF7D0")),
+            f"G5:G{last_row}",
+            FormulaRule(formula=['G5="OK"'], fill=PatternFill("solid", fgColor="BBF7D0")),
         )
         ws.conditional_formatting.add(
-            f"E5:E{last_row}",
-            FormulaRule(formula=['E5="KO"'], fill=PatternFill("solid", fgColor="FECACA")),
+            f"G5:G{last_row}",
+            FormulaRule(formula=['G5="KO"'], fill=PatternFill("solid", fgColor="FECACA")),
         )
         ws.conditional_formatting.add(
-            f"E5:E{last_row}",
-            FormulaRule(formula=['E5="N/A"'], fill=PatternFill("solid", fgColor="E2E8F0")),
+            f"G5:G{last_row}",
+            FormulaRule(formula=['G5="N/A"'], fill=PatternFill("solid", fgColor="E2E8F0")),
         )
 
-        widths = [8, 50, 45, 12, 14, 50]
+        # Widths: # | PM question | Dev label | How | Crit | Auto | Score | Comment | Tools&AI
+        widths = [6, 40, 42, 38, 8, 8, 10, 38, 42]
         for i, w in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = w
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[4].height = 24
+        ws.row_dimensions[4].height = 28
         for r in range(5, last_row + 1):
-            ws.row_dimensions[r].height = 48
+            ws.row_dimensions[r].height = 70
 
-        ws.freeze_panes = "A5"
+        ws.freeze_panes = "C5"
         ws.add_data_validation(score_validation)
 
     # ── Synthèse ─────────────────────────────────────────────────────────────
@@ -256,8 +281,9 @@ def build_workbook(themes: list[dict], results: dict | None = None,
     row = 5
     for i, theme in enumerate(themes, start=1):
         sheet_name = theme["id"]
-        rng = f"'{sheet_name}'!$E$5:$E$200"
-        crit_rng = f"'{sheet_name}'!$D$5:$D$200"
+        # Score column is G in v2 schema; Criticity column is E
+        rng = f"'{sheet_name}'!$G$5:$G$200"
+        crit_rng = f"'{sheet_name}'!$E$5:$E$200"
         ws.cell(row=row, column=1, value=i).font = CELL_FONT
         ws.cell(row=row, column=2, value=theme["name"]).font = CELL_FONT
         ws.cell(row=row, column=3, value=f'=COUNTIF({crit_rng},"🔴")').font = CELL_FONT
