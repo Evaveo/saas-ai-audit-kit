@@ -1,17 +1,18 @@
 {
-  "audited_repo": "c:/Users/test/my-saas",
-  "audit_date": "2026-05-27",
+  "audited_repo": "/path/to/example-saas",
+  "audit_date": "2026-01-15",
+  "_note": "Fictional example showing the expected JSON shape — replace with real audit output produced by the Claude Code skill.",
   "themes": {
     "01_Produit_UX": {
-      "1.1": {"status": "KO", "evidence": "components/Dashboard.tsx:120", "notes": "Pas d'onboarding visible — empty state vide"},
-      "1.2": {"status": "OK", "evidence": "components/EmptyState.tsx:15", "notes": "4 cards onboarding présentes"},
-      "1.3": {"status": "OK", "evidence": null, "notes": "CTA labels clairs partout"},
-      "1.10": {"status": "KO", "evidence": "components/Settings.tsx:340", "notes": "Suppression compte sans confirm modal"}
+      "1.1": {"status": "KO", "evidence": "src/pages/dashboard/index.tsx:42", "notes": "No onboarding for first-time users — dashboard shows empty cards with no CTA"},
+      "1.2": {"status": "OK", "evidence": "src/components/onboarding/welcome-grid.tsx:18", "notes": "Four-step welcome grid rendered when projects.length === 0"},
+      "1.3": {"status": "OK", "evidence": null, "notes": "CTA labels reviewed — all action-oriented (Create, Delete, Share)"},
+      "1.10": {"status": "KO", "evidence": "src/features/account/danger-zone.tsx:88", "notes": "Account deletion fires immediately — no confirmation modal"}
     },
     "02_Securite_Auth": {
-      "2.1": {"status": "OK", "evidence": "server/utils/authCookie.ts:25", "notes": "httpOnly cookie + SameSite=Lax"},
-      "2.3": {"status": "OK", "evidence": "server/middleware/auth.ts:99", "notes": "2FA enforced sur admin"},
-      "2.9": {"status": "N/A", "evidence": null, "notes": "Test runtime nécessaire (scan GitGuardian)"}
+      "2.1": {"status": "OK", "evidence": "api/auth/session-cookie.go:31", "notes": "Session cookie set with httpOnly + Secure + SameSite=Lax"},
+      "2.3": {"status": "OK", "evidence": "api/middleware/require-admin.go:55", "notes": "Admin endpoints require TOTP 2FA — verified at middleware level"},
+      "2.9": {"status": "N/A", "evidence": null, "notes": "Cannot verify from source — needs a runtime scan via GitGuardian or Trufflehog"}
     }
   }
 }
