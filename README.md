@@ -1,6 +1,6 @@
 # saas-ai-audit-kit
 
-> A 12-theme, ~145-point pre-launch audit grid for any SaaS that integrates AI — usable as a standalone spreadsheet **or** as an automated Claude Code skill that fills it for you.
+> A 13-theme, ~178-point pre-launch audit grid for any SaaS that integrates AI — usable as a standalone spreadsheet **or** as an automated Claude Code skill that fills it for you.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Made by Evaveo](https://img.shields.io/badge/made_by-Evaveo-7c3aed)](https://evaveo.com)
@@ -12,13 +12,24 @@ Most pre-launch checklists are either too generic ("ship it!") or too specific t
 - **Stack-agnostic** — works on any SaaS, any language, any cloud, any juridiction.
 - **AI-aware** — three dedicated themes for AI quality, costs, and governance (EU AI Act ready).
 - **Actionable** — every point has a concrete way to test it, not abstract platitudes.
-- **Automatable** — a Claude Code skill that dispatches 12 parallel agents to inspect your repo and fill the grid for you.
+- **Automatable** — a Claude Code skill that dispatches 13 parallel agents to inspect your repo and fill the grid for you.
+- **Stage-aware** (v2) — filter checks by product maturity (`early-stage`, `launch-ready`, `scale`).
 
-## The 12 themes
+## What's new in v2
+
+- 🆕 **5 statuts** au lieu de 3 : `OK`, `PARTIAL`, `KO`, `TODO`, `N/A`
+  - `PARTIAL` (counts as 0.5 OK) — pour les implémentations à moitié faites
+  - `TODO` (excluded from score) — pour distinguer "pas encore fait" de "mal fait"
+- ⚖️ **Score pondéré** : 🔴 counts 3×, 🟡 counts 2×, 🟢 counts 1×
+- 🎯 **`--profile`** flag : `early-stage` / `launch-ready` / `scale` skip les checks prématurés
+- 🔍 **`--scope`** flag : ne lancer que certains thèmes (gain tokens + temps)
+- 📊 **`--summary-json`** flag : output machine-readable pour CI/CD
+
+## The 13 themes
 
 | # | Theme | # of checks | Focus |
 |---|---|---|---|
-| 1 | Product & UX | 11 | First-run, empty states, mobile, a11y |
+| 1 | Product & UX | 13 | First-run, empty states, mobile, a11y |
 | 2 | Security & Auth | 14 | Cookies, CSP, 2FA, rate-limit, secrets |
 | 3 | Data & Privacy | 14 | GDPR rights, DPA, retention, encryption |
 | 4 | AI — Quality | 11 | Eval set, hallucinations, prompt injection |
@@ -30,6 +41,7 @@ Most pre-launch checklists are either too generic ("ship it!") or too specific t
 | 10 | Legal & Compliance | 13 | ToS, Privacy, cookies, rétractation |
 | 11 | UX/UI Design quality | 20 | Design system, states, branding, dark patterns |
 | 12 | Frontend ↔ Backend | 24 | API contracts, HTTP semantics, CORS, idempotency |
+| 13 | Documentation & Maintenance | 11 | README, CI, tests, semver, changelog |
 
 **Each point** is tagged with a criticality:
 - 🔴 **Blocker** — fix before public launch
@@ -96,11 +108,23 @@ The skill will :
 # Empty template
 python skill/audit_xlsx.py --output audit.xlsx
 
-# Or fill from your own JSON
+# Fill from your own JSON
 python skill/audit_xlsx.py --results audit_results.json --output AUDIT.xlsx
+
+# v2 options:
+#   --profile early-stage          → skip premature checks (Stripe webhooks, MRR dashboard, AI Act...)
+#   --profile launch-ready         → skip scale-only checks
+#   --scope 02_Securite_Auth,10_Legal  → only these themes (faster + cheaper)
+#   --summary-json out.json        → machine-readable summary for CI/CD
+
+python skill/audit_xlsx.py \
+  --results audit_results.json \
+  --output DOCS/AUDIT.xlsx \
+  --profile early-stage \
+  --summary-json DOCS/summary.json
 ```
 
-JSON format expected :
+JSON format expected (v2) :
 
 ```json
 {
@@ -108,11 +132,22 @@ JSON format expected :
   "audit_date": "2026-01-15",
   "themes": {
     "01_Produit_UX": {
-      "1.1": { "status": "OK", "evidence": "components/Onboarding.tsx:42", "notes": "First-run wizard..." }
+      "1.1": { "status": "OK", "evidence": "components/Onboarding.tsx:42", "notes": "First-run wizard..." },
+      "1.2": { "status": "PARTIAL", "evidence": "...", "notes": "exists but no skeleton loader" },
+      "1.3": { "status": "TODO", "notes": "scheduled for v1.1" },
+      "1.4": { "status": "KO", "notes": "no error toast at all" },
+      "1.5": { "status": "N/A", "notes": "no offline mode in this product" }
     }
   }
 }
 ```
+
+Status values:
+- `OK` — passes
+- `PARTIAL` — passes halfway (counts as 0.5 OK)
+- `KO` — fails
+- `TODO` — planned but not implemented (excluded from score)
+- `N/A` — does not apply
 
 ## Adapting to your context
 
