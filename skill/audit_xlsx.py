@@ -65,6 +65,61 @@ PROFILE_SKIPS = {
 
 VALID_STATUSES = ("OK", "PARTIAL", "KO", "TODO", "N/A")
 
+# Lignes / plages fixes des feuilles thème (formules Score / Synthèse)
+THEME_SCORE_ROW = 3
+THEME_HEADER_ROW = 4
+THEME_DATA_START_ROW = 5
+THEME_DATA_LAST_ROW = 200
+
+
+# ─── Formules Excel (scores par thème) ───────────────────────────────────────
+
+def _crit_weight_array(crit_rng: str) -> str:
+    return f'IF({crit_rng}="🔴",3,IF({crit_rng}="🟡",2,IF({crit_rng}="🟢",1,0)))'
+
+
+def _status_points_array(score_rng: str) -> str:
+    return f'IF({score_rng}="OK",1,IF({score_rng}="PARTIAL",0.5,IF({score_rng}="KO",0,0)))'
+
+
+def _evaluated_mask(score_rng: str) -> str:
+    return f'(({score_rng}="OK")+({score_rng}="PARTIAL")+({score_rng}="KO"))'
+
+
+def raw_score_formula(score_rng: str) -> str:
+    """Score brut : (OK + PARTIAL/2) / (OK + PARTIAL + KO)."""
+    denom = f'COUNTIF({score_rng},"OK")+COUNTIF({score_rng},"PARTIAL")+COUNTIF({score_rng},"KO")'
+    num = f'COUNTIF({score_rng},"OK")+COUNTIF({score_rng},"PARTIAL")*0.5'
+    return f'=IF({denom}=0,"",({num})/({denom}))'
+
+
+def theme_local_score_ranges() -> tuple[str, str]:
+    """Plages Score / Crit. sur la feuille courante (sans préfixe d'onglet)."""
+    score_rng = f"$G${THEME_DATA_START_ROW}:$G${THEME_DATA_LAST_ROW}"
+    crit_rng = f"$E${THEME_DATA_START_ROW}:$E${THEME_DATA_LAST_ROW}"
+    return score_rng, crit_rng
+
+
+def weighted_num_formula(score_rng: str, crit_rng: str) -> str:
+    return f'=SUMPRODUCT({_crit_weight_array(crit_rng)}*{_status_points_array(score_rng)})'
+
+
+def weighted_den_formula(score_rng: str, crit_rng: str) -> str:
+    w = _crit_weight_array(crit_rng)
+    return f'=SUMPRODUCT({w}*{_evaluated_mask(score_rng)})'
+
+
+def weighted_score_formula(num_cell: str, den_cell: str) -> str:
+    return f'=IF({den_cell}=0,"",{num_cell}/{den_cell})'
+
+
+def theme_score_ranges(sheet_name: str) -> tuple[str, str]:
+    """Plages Score (G) et Crit. (E) pour les formules d'un onglet thème."""
+    prefix = f"'{sheet_name}'!"
+    score_rng = f"{prefix}$G${THEME_DATA_START_ROW}:$G${THEME_DATA_LAST_ROW}"
+    crit_rng = f"{prefix}$E${THEME_DATA_START_ROW}:$E${THEME_DATA_LAST_ROW}"
+    return score_rng, crit_rng
+
 
 # ─── Styling ─────────────────────────────────────────────────────────────────
 
@@ -82,6 +137,8 @@ SUBTITLE_FONT = Font(name="Calibri", size=11, italic=True, color="64748B")
 META_FONT = Font(name="Calibri", size=10, color="475569")
 CELL_FONT = Font(name="Calibri", size=11, color="0F172A")
 SECTION_HEADER_FONT = Font(name="Calibri", size=12, bold=True, color="0F172A")
+SCORE_LABEL_FONT = Font(name="Calibri", size=11, bold=True, color="475569")
+SCORE_VALUE_FONT = Font(name="Calibri", size=11, bold=True, color="0F172A")
 
 CRIT_FILLS = {
     "🔴": PatternFill("solid", fgColor="FEE2E2"),
@@ -163,7 +220,8 @@ def build_workbook(themes: list[dict], results: dict | None = None,
         (None, "• Score : OK / PARTIAL / KO / TODO / N/A (dropdown sur la colonne Score)."),
         (None, "• PARTIAL compte pour 0.5 OK. TODO et N/A sont exclus du score."),
         (None, "• Score pondéré : 🔴 compte 3×, 🟡 compte 2×, 🟢 compte 1×."),
-        (None, "• La feuille 'Synthèse' agrège automatiquement les scores."),
+        (None, "• Chaque onglet thème affiche en ligne 3 le score brut et le score pondéré (formules)."),
+        (None, "• La feuille 'Synthèse' récupère ces scores depuis chaque onglet thème."),
         (None, None),
         ("Légende statut", None),
         ("OK", "Critère respecté"),
@@ -226,15 +284,50 @@ def build_workbook(themes: list[dict], results: dict | None = None,
         ws["A2"].font = SUBTITLE_FONT
         ws.merge_cells("A2:I2")
 
+        score_rng, crit_rng = theme_local_score_ranges()
+        sr = THEME_SCORE_ROW
+
+        ws.cell(row=sr, column=1, value="Score brut").font = SCORE_LABEL_FONT
+        raw_cell = ws.cell(row=sr, column=2, value=raw_score_formula(score_rng))
+        raw_cell.number_format = "0%"
+        raw_cell.font = SCORE_VALUE_FONT
+        raw_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        ws.cell(row=sr, column=3, value="Score pondéré").font = SCORE_LABEL_FONT
+        num_ref = f"$K${sr}"
+        den_ref = f"$L${sr}"
+        ws.cell(row=sr, column=11, value=weighted_num_formula(score_rng, crit_rng))
+        ws.cell(row=sr, column=12, value=weighted_den_formula(score_rng, crit_rng))
+        wgt_cell = ws.cell(row=sr, column=4, value=weighted_score_formula(num_ref, den_ref))
+        wgt_cell.number_format = "0%"
+        wgt_cell.font = SCORE_VALUE_FONT
+        wgt_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        for col in (1, 2, 3, 4):
+            ws.cell(row=sr, column=col).border = BORDER_THIN
+        for score_col in ("B", "D"):
+            ws.conditional_formatting.add(
+                f"{score_col}{sr}",
+                CellIsRule(operator="greaterThanOrEqual", formula=["0.9"], fill=PatternFill("solid", fgColor="BBF7D0")),
+            )
+            ws.conditional_formatting.add(
+                f"{score_col}{sr}",
+                CellIsRule(operator="between", formula=["0.65", "0.8999"], fill=PatternFill("solid", fgColor="FEF3C7")),
+            )
+            ws.conditional_formatting.add(
+                f"{score_col}{sr}",
+                CellIsRule(operator="lessThan", formula=["0.65"], fill=PatternFill("solid", fgColor="FECACA")),
+            )
+
         headers = [
             "#", "Question Chef de Projet", "Critère Développeur", "Comment tester",
             "Crit.", "Auto", "Score", "Commentaire", "Outils & IA",
         ]
         for col, h in enumerate(headers, start=1):
-            ws.cell(row=4, column=col, value=h)
-        style_header_row(ws, 4, len(headers))
+            ws.cell(row=THEME_HEADER_ROW, column=col, value=h)
+        style_header_row(ws, THEME_HEADER_ROW, len(headers))
 
-        for i, item in enumerate(theme["items"], start=5):
+        for i, item in enumerate(theme["items"], start=THEME_DATA_START_ROW):
             ws.cell(row=i, column=1, value=item["id"]).font = CELL_FONT
             ws.cell(row=i, column=2, value=item.get("pm_question", "")).font = CELL_FONT
             ws.cell(row=i, column=3, value=item["label"]).font = CELL_FONT
@@ -286,24 +379,30 @@ def build_workbook(themes: list[dict], results: dict | None = None,
                 )
                 cell.border = BORDER_THIN
 
-        last_row = 4 + len(theme["items"])
-        status_validation.add(f"G5:G{last_row}")
+        last_row = THEME_HEADER_ROW + len(theme["items"])
+        status_validation.add(f"G{THEME_DATA_START_ROW}:G{last_row}")
 
         for status, fill_color in [("OK", "BBF7D0"), ("PARTIAL", "FED7AA"), ("KO", "FECACA"), ("TODO", "DBEAFE"), ("N/A", "E2E8F0")]:
             ws.conditional_formatting.add(
-                f"G5:G{last_row}",
-                FormulaRule(formula=[f'G5="{status}"'], fill=PatternFill("solid", fgColor=fill_color)),
+                f"G{THEME_DATA_START_ROW}:G{last_row}",
+                FormulaRule(
+                    formula=[f'G{THEME_DATA_START_ROW}="{status}"'],
+                    fill=PatternFill("solid", fgColor=fill_color),
+                ),
             )
 
         widths = [6, 40, 42, 38, 8, 8, 12, 38, 42]
         for i, w in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = w
+        ws.column_dimensions["K"].hidden = True
+        ws.column_dimensions["L"].hidden = True
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[4].height = 28
-        for r in range(5, last_row + 1):
+        ws.row_dimensions[THEME_HEADER_ROW].height = 28
+        ws.row_dimensions[THEME_SCORE_ROW].height = 22
+        for r in range(THEME_DATA_START_ROW, last_row + 1):
             ws.row_dimensions[r].height = 70
 
-        ws.freeze_panes = "C5"
+        ws.freeze_panes = f"C{THEME_DATA_START_ROW}"
         ws.add_data_validation(status_validation)
 
     # ── Synthèse ─────────────────────────────────────────────────────────────
@@ -327,27 +426,24 @@ def build_workbook(themes: list[dict], results: dict | None = None,
     row = 5
     for i, theme in enumerate(themes, start=1):
         sheet_name = theme["id"]
-        rng = f"'{sheet_name}'!$G$5:$G$200"
-        crit_rng = f"'{sheet_name}'!$E$5:$E$200"
+        score_rng, crit_rng = theme_score_ranges(sheet_name)
+        sheet_ref = f"'{sheet_name}'"
         ws.cell(row=row, column=1, value=i).font = CELL_FONT
         ws.cell(row=row, column=2, value=theme["name"]).font = CELL_FONT
         ws.cell(row=row, column=3, value=f'=COUNTIF({crit_rng},"🔴")').font = CELL_FONT
         ws.cell(row=row, column=4, value=f'=COUNTIF({crit_rng},"🟡")').font = CELL_FONT
         ws.cell(row=row, column=5, value=f'=COUNTIF({crit_rng},"🟢")').font = CELL_FONT
-        ws.cell(row=row, column=6, value=f'=COUNTIF({rng},"OK")').font = CELL_FONT
-        ws.cell(row=row, column=7, value=f'=COUNTIF({rng},"PARTIAL")').font = CELL_FONT
-        ws.cell(row=row, column=8, value=f'=COUNTIF({rng},"KO")').font = CELL_FONT
-        ws.cell(row=row, column=9, value=f'=COUNTIF({rng},"TODO")').font = CELL_FONT
-        ws.cell(row=row, column=10, value=f'=COUNTIF({rng},"N/A")').font = CELL_FONT
-        # Score brut : (OK + PARTIAL/2) / (OK + PARTIAL + KO)
-        score_cell = ws.cell(row=row, column=11)
-        denom = f'(F{row}+G{row}+H{row})'
-        score_cell.value = f'=IF({denom}=0,"",(F{row}+G{row}*0.5)/{denom})'
+        ws.cell(row=row, column=6, value=f'=COUNTIF({score_rng},"OK")').font = CELL_FONT
+        ws.cell(row=row, column=7, value=f'=COUNTIF({score_rng},"PARTIAL")').font = CELL_FONT
+        ws.cell(row=row, column=8, value=f'=COUNTIF({score_rng},"KO")').font = CELL_FONT
+        ws.cell(row=row, column=9, value=f'=COUNTIF({score_rng},"TODO")').font = CELL_FONT
+        ws.cell(row=row, column=10, value=f'=COUNTIF({score_rng},"N/A")').font = CELL_FONT
+        score_cell = ws.cell(row=row, column=11, value=f"={sheet_ref}!$B${THEME_SCORE_ROW}")
         score_cell.number_format = "0%"
         score_cell.font = Font(name="Calibri", size=11, bold=True)
-        # Score pondéré : on calcule via SUMPRODUCT côté Python pour éviter formules complexes
-        # On laisse vide ici (rempli plus bas après calcul des poids)
-        ws.cell(row=row, column=12, value="").font = Font(name="Calibri", size=11, bold=True)
+        wgt_cell = ws.cell(row=row, column=12, value=f"={sheet_ref}!$D${THEME_SCORE_ROW}")
+        wgt_cell.number_format = "0%"
+        wgt_cell.font = Font(name="Calibri", size=11, bold=True)
 
         for col in range(1, 13):
             cell = ws.cell(row=row, column=col)
@@ -366,16 +462,6 @@ def build_workbook(themes: list[dict], results: dict | None = None,
 
         row += 1
 
-    # Compute weighted scores (Python-side) and inject as static values
-    if results:
-        weighted_by_theme = compute_weighted_scores(themes, results)
-        for i, theme in enumerate(themes):
-            score = weighted_by_theme.get(theme["id"])
-            if score is not None:
-                cell = ws.cell(row=5 + i, column=12, value=score)
-                cell.number_format = "0%"
-                cell.font = Font(name="Calibri", size=11, bold=True)
-
     total_row = row
     ws.cell(row=total_row, column=2, value="TOTAL").font = Font(name="Calibri", size=11, bold=True)
     for col_letter, col_idx in [("C", 3), ("D", 4), ("E", 5), ("F", 6), ("G", 7), ("H", 8), ("I", 9), ("J", 10)]:
@@ -384,13 +470,15 @@ def build_workbook(themes: list[dict], results: dict | None = None,
     ws.cell(row=total_row, column=11,
             value=f'=IF((F{total_row}+G{total_row}+H{total_row})=0,"",(F{total_row}+G{total_row}*0.5)/(F{total_row}+G{total_row}+H{total_row}))').number_format = "0%"
     ws.cell(row=total_row, column=11).font = Font(name="Calibri", size=12, bold=True, color="0F172A")
-    # Global weighted score
-    if results:
-        global_score = compute_global_weighted(themes, results)
-        if global_score is not None:
-            cell = ws.cell(row=total_row, column=12, value=global_score)
-            cell.number_format = "0%"
-            cell.font = Font(name="Calibri", size=12, bold=True, color="0F172A")
+    wgt_num_refs = ",".join(f"'{t['id']}'!$K${THEME_SCORE_ROW}" for t in themes)
+    wgt_den_refs = ",".join(f"'{t['id']}'!$L${THEME_SCORE_ROW}" for t in themes)
+    global_wgt_cell = ws.cell(
+        row=total_row,
+        column=12,
+        value=f"=IF(SUM({wgt_den_refs})=0,\"\",SUM({wgt_num_refs})/SUM({wgt_den_refs}))",
+    )
+    global_wgt_cell.number_format = "0%"
+    global_wgt_cell.font = Font(name="Calibri", size=12, bold=True, color="0F172A")
     for col in range(1, 13):
         ws.cell(row=total_row, column=col).fill = PatternFill("solid", fgColor="F1F5F9")
         ws.cell(row=total_row, column=col).border = BORDER_THIN
